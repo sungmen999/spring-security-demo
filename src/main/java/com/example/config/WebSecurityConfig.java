@@ -1,5 +1,6 @@
 package com.example.config;
 
+import com.example.security.CustomAuthenticationSuccessHandler;
 import com.example.security.UsernamePasswordAuthenticationProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,10 +26,12 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        // URLs are allowed by anyone.
+        // Check URL
         http
             .authorizeRequests()
-                .antMatchers("/", "/home").permitAll()
+                .antMatchers("/", "/home").permitAll() // Anyone
+                .antMatchers("/helloUser").hasRole("USER")
+                .antMatchers("/helloAdmin").hasRole("ADMIN")
                 .anyRequest().authenticated();
 
         // Handle form login
@@ -43,6 +46,11 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         http
             .logout()
                 .permitAll();
+
+        // Exception Handling
+        http
+            .exceptionHandling()
+                .accessDeniedPage("/403");
 
         http.httpBasic();
     }
@@ -77,6 +85,11 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     @Bean
     public UsernamePasswordAuthenticationProvider usernamePasswordAuthenticationProvider() {
         return new UsernamePasswordAuthenticationProvider();
+    }
+
+    @Bean
+    public CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler() {
+        return new CustomAuthenticationSuccessHandler();
     }
 
     @Override

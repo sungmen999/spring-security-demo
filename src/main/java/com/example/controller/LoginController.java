@@ -1,10 +1,13 @@
 package com.example.controller;
 
 import com.example.model.LoginForm;
+import com.example.security.AuthoritiesConstants;
+import com.example.security.SecurityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -37,6 +40,12 @@ public class LoginController {
 
     @Autowired
     private AuthenticationManager authenticationManager;
+
+//    @GetMapping("/hello")
+//    @PreAuthorize("hasRole('ROLE_ADMIN')")
+//    public String home() throws IOException {
+//        return "hello";
+//    }
 
     @GetMapping("/login")
     public String showLoginForm(@ModelAttribute("loginForm") LoginForm loginForm) throws IOException {
@@ -80,6 +89,11 @@ public class LoginController {
             return "redirect:/login?error";
         }
 
-        return "redirect:/hello";
+        // Redirect based on role
+        if(SecurityUtils.isCurrentUserInRole(AuthoritiesConstants.ADMIN)){
+            return "redirect:/helloAdmin";
+        }
+
+        return "redirect:/helloUser";
     }
 }
