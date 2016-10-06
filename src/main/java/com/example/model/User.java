@@ -19,6 +19,7 @@ public class User {
     // User information fields
     private String username;
     private String password;
+    private String passwordEncoder;
 
     // Spring Security fields
     private Set<Authority> authorities = new HashSet<>();
