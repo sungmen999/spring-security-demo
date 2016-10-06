@@ -3,6 +3,7 @@ package com.example.config;
 import com.example.security.UsernamePasswordAuthenticationProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -16,6 +17,12 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(prePostEnabled = true, securedEnabled = true)
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
+    @Bean
+    @Override
+    public AuthenticationManager authenticationManagerBean() throws Exception {
+        return super.authenticationManagerBean();
+    }
+
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         // URLs are allowed by anyone.
@@ -28,6 +35,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         // ถ้าไม่่กำหนด defaultSuccessUrl() หลังจาก login สำเร็จ จะวิ่งไปที่ "/"
         http
             .formLogin()
+                .loginProcessingUrl("/perform_login")
                 .loginPage("/login")
                 .permitAll();
 
@@ -35,6 +43,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         http
             .logout()
                 .permitAll();
+
+        http.httpBasic();
     }
 
 //    @Autowired
