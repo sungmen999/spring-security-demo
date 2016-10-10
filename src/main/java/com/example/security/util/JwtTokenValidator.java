@@ -7,6 +7,8 @@ import io.jsonwebtoken.Jwts;
 import org.springframework.stereotype.Component;
 
 /**
+ * Class validates a given token by using the secret configured in the application
+ *
  * Created by sungmen999 on 10/10/2016 AD.
  */
 @Component

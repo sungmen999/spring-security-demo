@@ -72,29 +72,21 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         // Exception Handling
         http.exceptionHandling().accessDeniedPage("/403");
 
-        // we don't need CSRF because our token is invulnerable
+        // We don't need CSRF because our token is invulnerable
         http.csrf().disable();
 
-        // Call our errorHandler if authentication/authorisation fails
-        http.exceptionHandling().authenticationEntryPoint(unauthorizedHandler);
+        // Call our errorHandler
+        http.exceptionHandling()
+                .accessDeniedPage("/403") // Access Denied
+                .authenticationEntryPoint(unauthorizedHandler); // authentication/authorisation fails
 
-        // don't create session
+        // Don't create session
         http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
 
         // Custom JWT based security filter
         http.addFilterBefore(authenticationTokenFilterBean(), UsernamePasswordAuthenticationFilter.class);
 
-        // disable page caching
+        // Disable page caching
         http.headers().cacheControl();
     }
-
-//    @Override
-//    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-//        auth.authenticationProvider(usernamePasswordAuthenticationProvider());
-//    }
-
-//    @Bean
-//    public UsernamePasswordAuthenticationProvider usernamePasswordAuthenticationProvider() {
-//        return new UsernamePasswordAuthenticationProvider();
-//    }
 }
