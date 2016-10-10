@@ -1,15 +1,20 @@
 package com.example.config;
 
-import com.example.security.CustomAuthenticationSuccessHandler;
-import com.example.security.UsernamePasswordAuthenticationProvider;
+import com.example.security.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import java.util.Arrays;
 
 /**
  * Created by sungmen999 on 10/6/2016 AD.
@@ -18,10 +23,27 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(prePostEnabled = true, securedEnabled = true)
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
+    private final JwtAuthenticationEntryPoint unauthorizedHandler;
+    private final JwtAuthenticationProvider authenticationProvider;
+
+    @Autowired
+    public WebSecurityConfig(JwtAuthenticationEntryPoint unauthorizedHandler, JwtAuthenticationProvider authenticationProvider) {
+        this.unauthorizedHandler = unauthorizedHandler;
+        this.authenticationProvider = authenticationProvider;
+    }
+
     @Bean
     @Override
     public AuthenticationManager authenticationManagerBean() throws Exception {
-        return super.authenticationManagerBean();
+        return new ProviderManager(Arrays.asList(authenticationProvider));
+    }
+
+    @Bean
+    public JwtAuthenticationTokenFilter authenticationTokenFilterBean() throws Exception {
+        JwtAuthenticationTokenFilter authenticationTokenFilter = new JwtAuthenticationTokenFilter();
+        authenticationTokenFilter.setAuthenticationManager(authenticationManager());
+        authenticationTokenFilter.setAuthenticationSuccessHandler(new JwtAuthenticationSuccessHandler());
+        return authenticationTokenFilter;
     }
 
     @Override
@@ -48,52 +70,31 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .permitAll();
 
         // Exception Handling
-        http
-            .exceptionHandling()
-                .accessDeniedPage("/403");
+        http.exceptionHandling().accessDeniedPage("/403");
 
-        http.httpBasic();
+        // we don't need CSRF because our token is invulnerable
+        http.csrf().disable();
+
+        // Call our errorHandler if authentication/authorisation fails
+        http.exceptionHandling().authenticationEntryPoint(unauthorizedHandler);
+
+        // don't create session
+        http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+
+        // Custom JWT based security filter
+        http.addFilterBefore(authenticationTokenFilterBean(), UsernamePasswordAuthenticationFilter.class);
+
+        // disable page caching
+        http.headers().cacheControl();
     }
 
-//    @Autowired
-//    public void configure(AuthenticationManagerBuilder auth) throws Exception {
-//        // AuthenticationProvider - inMemoryAuthentication
-//        auth.inMemoryAuthentication().withUser("admin").password("password").roles("ADMIN");
-//        auth.inMemoryAuthentication().withUser("user").password("password").roles("USER");
+//    @Override
+//    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+//        auth.authenticationProvider(usernamePasswordAuthenticationProvider());
 //    }
-
 
 //    @Bean
-//    public PasswordEncoder passwordEncoder() {
-//        return new BCryptPasswordEncoder();
+//    public UsernamePasswordAuthenticationProvider usernamePasswordAuthenticationProvider() {
+//        return new UsernamePasswordAuthenticationProvider();
 //    }
-//
-//    @Bean
-//    public UserDetailsService customUserDetailsService() {
-//        return new CustomUserDetailsService();
-//    }
-//
-//    @Bean
-//    public DaoAuthenticationProvider authenticationProvider() {
-//        DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider();
-//        authenticationProvider.setUserDetailsService(customUserDetailsService());
-//        authenticationProvider.setPasswordEncoder(passwordEncoder());
-//        return authenticationProvider;
-//    }
-
-
-    @Bean
-    public UsernamePasswordAuthenticationProvider usernamePasswordAuthenticationProvider() {
-        return new UsernamePasswordAuthenticationProvider();
-    }
-
-    @Bean
-    public CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler() {
-        return new CustomAuthenticationSuccessHandler();
-    }
-
-    @Override
-    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-        auth.authenticationProvider(usernamePasswordAuthenticationProvider());
-    }
 }
