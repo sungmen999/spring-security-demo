@@ -1,19 +1,22 @@
 package com.example.security.config;
 
-import com.example.security.JwtAuthenticationEntryPoint;
-import com.example.security.JwtAuthenticationProvider;
-import com.example.security.JwtAuthenticationSuccessHandler;
-import com.example.security.JwtAuthenticationTokenFilter;
+import com.example.security.auth.ajax.AjaxAuthenticationProvider;
+import com.example.security.auth.ajax.AjaxLoginProcessingFilter;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.authentication.AuthenticationFailureHandler;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import java.util.Arrays;
@@ -23,29 +26,53 @@ import java.util.Arrays;
  */
 @Configuration
 @EnableWebSecurity
-@EnableGlobalMethodSecurity(prePostEnabled = true, securedEnabled = true)
+//@EnableGlobalMethodSecurity(prePostEnabled = true, securedEnabled = true)
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
-    private final JwtAuthenticationEntryPoint unauthorizedHandler;
-    private final JwtAuthenticationProvider authenticationProvider;
+    private static final String JWT_TOKEN_HEADER_PARAM = "X-Authorization";
+    private static final String FORM_BASED_LOGIN_ENTRY_POINT = "/api/auth/login";
+    private static final String TOKEN_BASED_AUTH_ENTRY_POINT = "/api/**";
+    private static final String TOKEN_REFRESH_ENTRY_POINT = "/api/auth/token";
+
+    private AuthenticationSuccessHandler successHandler;
+    private AuthenticationFailureHandler failureHandler;
+    private ObjectMapper objectMapper;
+    private AjaxAuthenticationProvider ajaxAuthenticationProvider;
 
     @Autowired
-    public WebSecurityConfig(JwtAuthenticationEntryPoint unauthorizedHandler, JwtAuthenticationProvider authenticationProvider) {
-        this.unauthorizedHandler = unauthorizedHandler;
-        this.authenticationProvider = authenticationProvider;
+    public WebSecurityConfig(AuthenticationSuccessHandler successHandler,
+                             AuthenticationFailureHandler failureHandler,
+                             ObjectMapper objectMapper) {
+        this.successHandler = successHandler;
+        this.failureHandler = failureHandler;
+        this.objectMapper = objectMapper;
     }
 
     @Bean
     @Override
     public AuthenticationManager authenticationManagerBean() throws Exception {
-        return new ProviderManager(Arrays.asList(authenticationProvider));
+        return super.authenticationManagerBean();
     }
 
     @Bean
-    public JwtAuthenticationTokenFilter authenticationTokenFilterBean() throws Exception {
-        JwtAuthenticationTokenFilter authenticationTokenFilter = new JwtAuthenticationTokenFilter();
-        authenticationTokenFilter.setAuthenticationManager(authenticationManager());
-        authenticationTokenFilter.setAuthenticationSuccessHandler(new JwtAuthenticationSuccessHandler());
-        return authenticationTokenFilter;
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    protected AjaxLoginProcessingFilter buildAjaxLoginProcessingFilter() throws Exception {
+        AjaxLoginProcessingFilter filter = new AjaxLoginProcessingFilter(FORM_BASED_LOGIN_ENTRY_POINT, successHandler, failureHandler, objectMapper);
+        filter.setAuthenticationManager(authenticationManagerBean());
+        return filter;
+    }
+
+    @Bean
+    protected AjaxAuthenticationProvider ajaxAuthenticationProvider() {
+        return new AjaxAuthenticationProvider();
+    }
+
+    @Override
+    protected void configure(AuthenticationManagerBuilder auth) {
+        auth.authenticationProvider(ajaxAuthenticationProvider());
     }
 
     @Override
@@ -57,15 +84,15 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         http.authorizeRequests().anyRequest().authenticated();
 
         // Call our errorHandler
-        http.exceptionHandling().authenticationEntryPoint(unauthorizedHandler);  // authentication/authorisation fails
+        //http.exceptionHandling().authenticationEntryPoint(unauthorizedHandler);  // authentication/authorisation fails
 
         // Don't create session
         http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
 
-        // Custom JWT based security filter
-        http.addFilterBefore(authenticationTokenFilterBean(), UsernamePasswordAuthenticationFilter.class);
-
         // Disable page caching
         http.headers().cacheControl();
+
+        // Custom JWT based security filter
+        http.addFilterBefore(buildAjaxLoginProcessingFilter(), UsernamePasswordAuthenticationFilter.class);
     }
 }
