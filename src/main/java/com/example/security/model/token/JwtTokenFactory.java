@@ -28,7 +28,7 @@ public class JwtTokenFactory {
         this.settings = settings;
     }
 
-    public AccessJwtToken createAccessJwtToken(UserContext userContext) {
+    public JwtToken createAccessJwtToken(UserContext userContext) {
         if (StringUtils.isBlank(userContext.getUsername()))
             throw new IllegalArgumentException("Cannot create JWT Token without username");
 
