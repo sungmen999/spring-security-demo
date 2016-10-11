@@ -1,11 +1,9 @@
 package com.example.security.auth.ajax;
 
-import com.example.model.UserContext;
+import com.example.security.model.UserContext;
 import com.example.security.model.token.JwtToken;
 import com.example.security.model.token.JwtTokenFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -45,7 +43,7 @@ public class AjaxAwareAuthenticationSuccessHandler implements AuthenticationSucc
         JwtToken refreshToken = tokenFactory.createRefreshToken(userContext);
 
         Map<String, String> tokenMap = new HashMap<String, String>();
-        tokenMap.put("token", accessToken.getToken());
+        tokenMap.put("accessToken", accessToken.getToken());
         tokenMap.put("refreshToken", refreshToken.getToken());
 
         response.setStatus(HttpStatus.OK.value());

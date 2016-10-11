@@ -1,6 +1,6 @@
 package com.example.security.model.token;
 
-import com.example.model.UserContext;
+import com.example.security.model.UserContext;
 import com.example.security.config.JwtSettings;
 import com.example.security.model.Scopes;
 import io.jsonwebtoken.Claims;
