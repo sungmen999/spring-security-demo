@@ -1,12 +1,14 @@
-package com.example.config;
+package com.example.security.config;
 
-import com.example.security.*;
+import com.example.security.JwtAuthenticationEntryPoint;
+import com.example.security.JwtAuthenticationProvider;
+import com.example.security.JwtAuthenticationSuccessHandler;
+import com.example.security.JwtAuthenticationTokenFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -48,37 +50,14 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        // Check URL
-        http
-            .authorizeRequests()
-                .antMatchers("/", "/home").permitAll() // Anyone
-                .antMatchers("/helloUser").hasRole("USER")
-                .antMatchers("/helloAdmin").hasRole("ADMIN")
-                .anyRequest().authenticated();
-
-        // Handle form login
-        // ถ้าไม่่กำหนด defaultSuccessUrl() หลังจาก login สำเร็จ จะวิ่งไปที่ "/"
-        http
-            .formLogin()
-                .loginProcessingUrl("/perform_login")
-                .loginPage("/login")
-                .permitAll();
-
-        // Handle logout
-        http
-            .logout()
-                .permitAll();
-
-        // Exception Handling
-        http.exceptionHandling().accessDeniedPage("/403");
-
         // We don't need CSRF because our token is invulnerable
         http.csrf().disable();
 
+        // All urls must be authenticated (filter for token always fires (/**)
+        http.authorizeRequests().anyRequest().authenticated();
+
         // Call our errorHandler
-        http.exceptionHandling()
-                .accessDeniedPage("/403") // Access Denied
-                .authenticationEntryPoint(unauthorizedHandler); // authentication/authorisation fails
+        http.exceptionHandling().authenticationEntryPoint(unauthorizedHandler);  // authentication/authorisation fails
 
         // Don't create session
         http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
